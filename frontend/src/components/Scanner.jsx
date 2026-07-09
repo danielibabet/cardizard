@@ -13,8 +13,13 @@ export default function Scanner({ onCapture }) {
 
   const startCamera = async () => {
     try {
+      // Pedimos la máxima resolución posible a la cámara del móvil (ideal 4K/1080p)
       const mediaStream = await navigator.mediaDevices.getUserMedia({ 
-        video: { facingMode: 'environment' } 
+        video: { 
+          facingMode: 'environment',
+          width: { ideal: 3840 },
+          height: { ideal: 2160 }
+        } 
       });
       setStream(mediaStream);
       if (videoRef.current) {
@@ -43,12 +48,13 @@ export default function Scanner({ onCapture }) {
     const context = canvas.getContext('2d');
     context.drawImage(video, 0, 0, canvas.width, canvas.height);
     
+    // Convertimos el frame a JPEG con calidad casi máxima (0.95) para que Textract pueda leer los textos más pequeños
     canvas.toBlob((blob) => {
       if (blob) {
         stopCamera();
         onCapture(blob);
       }
-    }, 'image/jpeg', 0.8);
+    }, 'image/jpeg', 0.95);
   };
 
   if (error) {
