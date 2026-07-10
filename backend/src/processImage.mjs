@@ -181,31 +181,48 @@ async function runTextract(imageId) {
 /**
  * Extracts card number from OCR lines.
  *
- * Supported patterns:
- *   025/165  →  cardNumber "25",  totalCards "165"
- *   25/165   →  cardNumber "25",  totalCards "165"
- *   TG01/TG30 → cardNumber "TG01", totalCards "TG30"
- *   SWSH076  →  cardNumber "SWSH076", totalCards null
- *   SVP 023  →  cardNumber "SVP023",  totalCards null
+ * Supported patterns (in priority order):
+ *   Pass 1 — 025/165      → cardNumber "25",    totalCards "165"
+ *   Pass 1 — TG01/TG30   → cardNumber "TG01",  totalCards "TG30"
+ *   Pass 2 — SWSH076      → cardNumber "SWSH076", totalCards null
+ *   Pass 2 — MEP ES 072   → cardNumber "MEPES072" (cleaned)
+ *   Pass 3 — "072" (lone) → cardNumber "72",    totalCards null
+ *             (bottom half of OCR, lone 2-4 digit lines)
  */
 function extractCardNumber(lines) {
-  // Pass 1: "number/total" pattern (most common on modern cards)
+  // Pass 1: "number/total" pattern — highest confidence
   for (const line of lines) {
     const m = line.match(/\b([A-Za-z]{0,4}\d{1,4})\s*\/\s*([A-Za-z]{0,2}\d{1,4})\b/);
     if (m) {
       let num = m[1].toUpperCase();
-      // Strip leading zeros for purely numeric numbers: 025 → 25
       if (/^\d+$/.test(num)) num = String(parseInt(num, 10));
       return { cardNumber: num, totalCards: m[2] };
     }
   }
 
-  // Pass 2: Promo / special codes without slash (SWSH076, SVP023, SM241)
+  // Pass 2: Promo / set codes without slash (SWSH076, SVP023, MEP ES 072)
   for (const line of lines) {
-    const m = line.match(/\b([A-Z]{2,5}\s*\d{2,4})\b/);
+    const m = line.match(/\b([A-Z]{2,5}(?:\s+[A-Z]{2,3})?\s*\d{2,4})\b/);
     if (m) {
-      const num = m[1].replace(/\s+/g, ""); // "SVP 023" → "SVP023"
-      return { cardNumber: num, totalCards: null };
+      // "MEP ES 072" → "072" (extract just the trailing digits for API search)
+      const raw = m[1].replace(/\s+/g, "");
+      // If it ends in digits, use those digits as the card number
+      const trailingDigits = raw.match(/(\d{2,4})$/);
+      const num = trailingDigits ? String(parseInt(trailingDigits[1], 10)) : raw;
+      const prefix = raw.replace(/(\d+)$/, "");
+      return { cardNumber: num, totalCards: null, setPrefix: prefix || null };
+    }
+  }
+
+  // Pass 3: Lone numeric line in the BOTTOM HALF of the card
+  // Textract often reads "072" without the "/165" when lighting is bad.
+  // We only look at the latter half of all lines to avoid matching HP values.
+  const lowerHalf = lines.slice(Math.floor(lines.length / 2));
+  for (const line of lowerHalf) {
+    const trimmed = line.trim();
+    // Match a line that is ONLY a 2-4 digit number (no letters, no punctuation)
+    if (/^\d{2,4}$/.test(trimmed)) {
+      return { cardNumber: String(parseInt(trimmed, 10)), totalCards: null };
     }
   }
 
