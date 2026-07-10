@@ -6,7 +6,7 @@ Description: >
 
 Globals:
   Function:
-    Timeout: 30
+    Timeout: 45
     MemorySize: 512
     Runtime: nodejs20.x
     Environment:
@@ -19,6 +19,7 @@ Globals:
       AllowOrigin: "'*'"
 
 Resources:
+  # ── S3 Bucket for temporary image uploads ──────────────────────────────
   UploadBucket:
     Type: AWS::S3::Bucket
     Properties:
@@ -37,6 +38,29 @@ Resources:
         - Key: project
           Value: cardizard
 
+  # ── DynamoDB Cache Table ───────────────────────────────────────────────
+  # Stores pokemontcg.io results keyed by MD5(cardNumber::name).
+  # TTL auto-expires items after 24 hours to keep data fresh.
+  # PAY_PER_REQUEST = $0 at low volume (free tier: 25 RCU + 25 WCU).
+  CardCacheTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: !Sub "cardizard-cache-${AWS::StackName}"
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: cacheKey
+          AttributeType: S
+      KeySchema:
+        - AttributeName: cacheKey
+          KeyType: HASH
+      TimeToLiveSpecification:
+        AttributeName: ttl
+        Enabled: true
+      Tags:
+        - Key: project
+          Value: cardizard
+
+  # ── Lambda: Get Presigned URL for S3 upload ────────────────────────────
   GetPresignedUrlFunction:
     Type: AWS::Serverless::Function
     Properties:
@@ -54,21 +78,28 @@ Resources:
       Tags:
         project: cardizard
 
+  # ── Lambda: Process Image (OCR + API + Cache) ─────────────────────────
   ProcessImageFunction:
     Type: AWS::Serverless::Function
     Properties:
       CodeUri: src/
       Handler: processImage.handler
+      Timeout: 45
       Policies:
         - S3ReadPolicy:
             BucketName: !Ref UploadBucket
         - S3CrudPolicy:
             BucketName: !Ref UploadBucket
+        - DynamoDBCrudPolicy:
+            TableName: !Ref CardCacheTable
         - Statement:
             - Effect: Allow
               Action:
                 - textract:DetectDocumentText
               Resource: "*"
+      Environment:
+        Variables:
+          CACHE_TABLE_NAME: !Ref CardCacheTable
       Events:
         ApiEvent:
           Type: Api
@@ -82,3 +113,6 @@ Outputs:
   ApiUrl:
     Description: "API Gateway endpoint URL"
     Value: !Sub "https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/"
+  CacheTableName:
+    Description: "DynamoDB cache table name"
+    Value: !Ref CardCacheTable
