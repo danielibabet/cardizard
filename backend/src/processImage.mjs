@@ -88,7 +88,7 @@ export const handler = async (event) => {
       return respond(500, { error: "OCR failed – try a clearer photo" });
     }
 
-    console.log("=== OCR LINES ===", lines.slice(0, 10));
+    console.log("=== OCR LINES (ALL)", JSON.stringify(lines));
 
     // ── 2. Extraer número de carta y nombre ─────────────────────────────
     const { cardNumber, totalCards } = extractCardNumber(lines);
@@ -395,17 +395,13 @@ function scoreCandidates(cards, cardNumber, possibleName, totalCards, lines) {
 /**
  * Explodes a single card's embedded pricing data into separate variant objects.
  *
- * TCGPlayer stores per-finish prices:
- *   tcgplayer.prices.normal           → { market, mid, low, high }
- *   tcgplayer.prices.holofoil         → { market, mid, low, high }
- *   tcgplayer.prices.reverseHolofoil  → { market, mid, low, high }
+ * Strategy (priority order):
+ *  1. Cardmarket EUR prices  → trendPrice (Normal) + reverseHoloTrend (Reverse Holo)
+ *  2. TCGPlayer USD prices   → one object per finish key (normal, holofoil, reverseHolofoil...)
+ *  3. Last resort            → single "Normal" entry with price "N/A"
  *
- * Cardmarket stores flat fields:
- *   cardmarket.prices.trendPrice       → normal trend
- *   cardmarket.prices.reverseHoloTrend → reverse holo trend
- *
- * Each sub-key becomes a separate entry in the returned variants array,
- * so the frontend can show a visual picker per finish type.
+ * Both Cardmarket AND TCGPlayer entries are added when both are available,
+ * giving the user the most complete picture of market value.
  */
 function explodeVariants(card, spanishSet, spanishImage) {
   const variants = [];
@@ -419,54 +415,66 @@ function explodeVariants(card, spanishSet, spanishImage) {
     imageUrl: spanishImage,
   };
 
-  // ── Primary source: TCGPlayer (explicit per-variant keys) ──────────────
-  const tp = card.tcgplayer?.prices;
+  console.log(`[explodeVariants] ${card.id} — tcgplayer:`, JSON.stringify(card.tcgplayer?.prices), "cardmarket:", JSON.stringify(card.cardmarket?.prices));
 
+  // ── 1. Cardmarket EUR (priority for European users) ────────────────────
+  const cm = card.cardmarket?.prices;
+  if (cm) {
+    const normalPrice = cm.trendPrice ?? cm.averageSellPrice ?? null;
+    if (normalPrice != null && normalPrice > 0) {
+      variants.push({
+        ...base,
+        variant: "Normal",
+        price: `€${normalPrice.toFixed(2)}`,
+        priceSource: "Cardmarket",
+      });
+    }
+
+    // reverseHoloTrend > 0 means there IS a reverse holo market for this card
+    const revPrice = cm.reverseHoloTrend ?? null;
+    if (revPrice != null && revPrice > 0) {
+      variants.push({
+        ...base,
+        variant: "Reverse Holo",
+        price: `€${revPrice.toFixed(2)}`,
+        priceSource: "Cardmarket",
+      });
+    }
+  }
+
+  // ── 2. TCGPlayer USD (per finish-type sub-keys) ────────────────────────
+  const tp = card.tcgplayer?.prices;
   if (tp && Object.keys(tp).length > 0) {
     for (const [key, priceData] of Object.entries(tp)) {
       const price = priceData.market ?? priceData.mid ?? priceData.low ?? null;
+      const label = VARIANT_LABELS[key] || humanize(key);
+
+      // Avoid duplicating a "Normal" entry already covered by Cardmarket
+      const alreadyHaveNormal = variants.some(
+        (v) => v.variant === "Normal" && v.priceSource === "Cardmarket"
+      );
+      const alreadyHaveReverse = variants.some(
+        (v) => v.variant === "Reverse Holo" && v.priceSource === "Cardmarket"
+      );
+      if (label === "Normal" && alreadyHaveNormal) continue;
+      if (label === "Reverse Holo" && alreadyHaveReverse) continue;
+
       variants.push({
         ...base,
-        variant: VARIANT_LABELS[key] || humanize(key),
+        variant: label,
         price: price != null ? `$${price.toFixed(2)}` : "N/A",
         priceSource: "TCGPlayer",
       });
     }
   }
 
-  // ── Fallback: Cardmarket (if TCGPlayer has no data) ────────────────────
-  if (variants.length === 0) {
-    const cm = card.cardmarket?.prices;
-    if (cm) {
-      const normalPrice = cm.trendPrice ?? cm.averageSellPrice ?? null;
-      if (normalPrice != null) {
-        variants.push({
-          ...base,
-          variant: "Normal",
-          price: `€${normalPrice.toFixed(2)}`,
-          priceSource: "Cardmarket",
-        });
-      }
-
-      const revPrice = cm.reverseHoloTrend ?? cm.reverseHoloSell ?? null;
-      if (revPrice != null) {
-        variants.push({
-          ...base,
-          variant: "Reverse Holo",
-          price: `€${revPrice.toFixed(2)}`,
-          priceSource: "Cardmarket",
-        });
-      }
-    }
-  }
-
-  // ── Last resort: no pricing data at all ────────────────────────────────
+  // ── 3. Last resort: no pricing data from any source ────────────────────
   if (variants.length === 0) {
     variants.push({
       ...base,
       variant: "Normal",
       price: "N/A",
-      priceSource: "Unknown",
+      priceSource: "Sin datos",
     });
   }
 
