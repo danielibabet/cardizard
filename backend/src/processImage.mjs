@@ -235,7 +235,7 @@ function extractCardNumber(lines) {
  */
 function extractCardName(lines) {
   const noise = [
-    "basic", "bsic", "fase", "stage", "vmax", "vstar", "hp", "ps",
+    "basic", "bsic", "fase", "fasc", "stage", "vmax", "vstar", "hp", "ps",
     "pager", "evolucion", "evolution", "weakness", "resistance",
     "retreat", "debilidad", "retirada", "regla", "rule", "ability",
     "habilidad", "pokemon", "pokémon",
@@ -247,6 +247,7 @@ function extractCardName(lines) {
       lower.length > 2 &&
       !noise.some((w) => lower.includes(w)) &&
       !/^\d+$/.test(lower) &&
+      !/^[a-z]+\d+$/i.test(lower) && // ignores things like FASC1, PS320
       !lower.includes("$") &&
       !lower.includes("€") &&
       !/^\d+\s*\/\s*\d+$/.test(lower)
@@ -295,13 +296,19 @@ async function searchPokemonTCG(cardNumber, possibleName) {
 }
 
 /**
- * Low-level HTTP fetch to pokemontcg.io v2.
+ * Low-level HTTP fetch to pokemontcg.io v2 with an 8-second timeout.
+ * Prevents API Gateway 29s timeout when pokemontcg.io hangs on broad queries.
  */
 async function fetchPTCG(query, pageSize) {
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 8000);
+
   try {
     const url = `https://api.pokemontcg.io/v2/cards?q=${encodeURIComponent(query)}&pageSize=${pageSize}`;
     console.log("PTCG →", url);
-    const res = await fetch(url);
+    const res = await fetch(url, { signal: controller.signal });
+    clearTimeout(timeoutId);
+
     if (!res.ok) {
       console.warn("PTCG HTTP", res.status);
       return null;
@@ -309,6 +316,7 @@ async function fetchPTCG(query, pageSize) {
     const json = await res.json();
     return json.data?.length ? json.data : null;
   } catch (e) {
+    clearTimeout(timeoutId);
     console.error("PTCG fetch error:", e.message);
     return null;
   }
