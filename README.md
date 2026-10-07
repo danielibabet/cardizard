@@ -1,4 +1,4 @@
-﻿# Cardizard - Pokemon TCG Card Scanner
+# Cardizard - Pokemon TCG Card Scanner
 
 <p align="center">
   <img src="https://img.shields.io/badge/React-18+-61DAFB?style=for-the-badge&logo=react&logoColor=black" alt="React"/>
@@ -18,31 +18,31 @@ Cardizard is a **Mobile-First progressive web application** designed to scan phy
 
 ---
 
-## ⚡ Key Features
+## Key Features
 
-- 📸 **Mobile Camera Scanner:** Instant photo capture and cropping optimized for handheld devices.
-- 🔍 **AI OCR Extraction:** High-precision text detection powered by AWS Textract to identify Pokémon names, set numbers, and series codes.
-- 💰 **Market Price & Rarity Lookup:** Connects to Pokémon TCG databases for up-to-date card values, foil variations, and historical trends.
-- ⚡ **Serverless Architecture:** Fast, cost-efficient backend powered by AWS Lambda & API Gateway using AWS SAM.
+- **Mobile Camera Scanner:** Instant photo capture and cropping optimized for handheld devices.
+- **AI OCR Extraction:** High-precision text detection powered by AWS Textract to identify Pokémon names, set numbers, and series codes.
+- **Market Price & Rarity Lookup:** Connects to Pokémon TCG databases for up-to-date card values, foil variations, and historical trends.
+- **Serverless Architecture:** Fast, cost-efficient backend powered by AWS Lambda & API Gateway using AWS SAM.
 
 ---
 
-## 🏛️ Architecture Overview
+## Architecture Overview
 
-`mermaid
+```mermaid
 flowchart LR
-    A["📱 Mobile Web Client\n(React + Vite + Tailwind)"] -->|Upload Card Image| B["☁️ Amazon API Gateway"]
-    B --> C["⚡ AWS Lambda Handler"]
-    C -->|Extract Text & IDs| D["🔍 AWS Textract"]
-    C -->|Fetch Card Data & Prices| E["🃏 Pokemon TCG API"]
+    A["Mobile Web Client\n(React + Vite + Tailwind)"] -->|Upload Card Image| B["Amazon API Gateway"]
+    B --> C["AWS Lambda Handler"]
+    C -->|Extract Text & IDs| D["AWS Textract"]
+    C -->|Fetch Card Data & Prices| E["Pokemon TCG API"]
     C -->|Return Card Details| A
-`
+```
 
 ---
 
-## 📁 Project Structure
+## Project Structure
 
-`	ext
+```text
 cardizard/
 ├── frontend/           # React + Vite + Tailwind CSS mobile-first web app
 │   ├── src/            # Components, camera viewfinder, and card details UI
@@ -50,32 +50,32 @@ cardizard/
 └── backend/            # AWS Serverless Application Model (SAM)
     ├── template.yaml   # AWS SAM Infrastructure definition
     └── handlers/       # Lambda functions for OCR processing & API integration
-`
+```
 
 ---
 
-## 🚀 Local Development & Deployment
+## Local Development & Deployment
 
 ### 1. Frontend Setup
 
-`ash
+```bash
 cd frontend
 npm install
 npm run dev
-`
+```
 
 ### 2. Backend Deployment (AWS SAM)
 
-`ash
+```bash
 cd backend
 npm install
 sam build
 sam deploy --guided
-`
+```
 
 ---
 
-## ☕ Support & Author
+## Support & Author
 
 - **Daniel Ibáñez** - [@danielibabet](https://github.com/danielibabet)
 - If you find this project helpful, consider supporting: [![Buy Me A Coffee](https://img.shields.io/badge/Buy%20Me%20A%20Coffee-Donate-yellow.svg?style=flat&logo=buy-me-a-coffee)](https://buymeacoffee.com/dibanezb)
