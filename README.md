@@ -1,58 +1,72 @@
-# Cardizard - Pokémon TCG Scanner
+﻿# Cardizard - Pokemon TCG Card Scanner
 
-Cardizard es una aplicación web Mobile-First para escanear cartas de Pokémon TCG usando la cámara de tu móvil, detectando el texto con AWS Textract y obteniendo su rareza y precio de mercado desde la API de Pokémon TCG.
+<p align="center">
+  <img src="https://img.shields.io/badge/React-18+-61DAFB?style=for-the-badge&logo=react&logoColor=black" alt="React"/>
+  <img src="https://img.shields.io/badge/Vite-646CFF?style=for-the-badge&logo=vite&logoColor=white" alt="Vite"/>
+  <img src="https://img.shields.io/badge/Tailwind_CSS-38B2AC?style=for-the-badge&logo=tailwind-css&logoColor=white" alt="Tailwind CSS"/>
+  <img src="https://img.shields.io/badge/AWS_SAM-FF9900?style=for-the-badge&logo=amazon-aws&logoColor=white" alt="AWS SAM"/>
+  <img src="https://img.shields.io/badge/AWS_Textract-232F3E?style=for-the-badge&logo=amazon-aws&logoColor=white" alt="AWS Textract"/>
+</p>
 
-## Arquitectura
+Cardizard is a **Mobile-First progressive web application** designed to scan physical Pokémon TCG cards directly from your smartphone camera, extract card text/IDs with **AWS Textract**, and fetch real-time rarity, card variants, and market prices via the official **Pokémon TCG API**.
 
-El proyecto consta de dos partes:
-1. **Frontend**: React + Vite + Tailwind CSS.
-2. **Backend**: AWS Serverless Application Model (SAM) + Node.js (Lambdas).
+---
 
-## Despliegue del Backend (AWS SAM)
+## Key Features
 
-1. Instala [AWS CLI](https://aws.amazon.com/cli/) y [AWS SAM CLI](https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/install-sam-cli.html).
-2. Configura tus credenciales con `aws configure` usando la cuenta de `danielibabet`.
-3. Navega al directorio backend:
-   ```bash
-   cd backend
-   ```
-4. Instala las dependencias de Node.js:
-   ```bash
-   npm install
-   ```
-5. Construye el proyecto SAM:
-   ```bash
-   sam build
-   ```
-6. Despliega en AWS:
-   ```bash
-   sam deploy --guided
-   ```
-   * Sigue las instrucciones. 
-   * Nombre del stack: `cardizard`
-   * Confirmar la creación de roles IAM y permisos.
-   * SAM generará un API Gateway Endpoint URL (ej. `https://XYZ.execute-api.us-east-1.amazonaws.com/Prod/`).
-   
-## Ejecución del Frontend local
+- 📸 **Mobile Camera Scanner:** Instant photo capture and cropping optimized for handheld devices.
+- 🔍 **AI OCR Extraction:** High-precision text detection powered by AWS Textract to identify Pokémon names, set numbers, and series codes.
+- 💰 **Market Price & Rarity Lookup:** Connects to Pokémon TCG databases for up-to-date card values, foil variations, and historical trends.
+- ⚡ **Serverless Architecture:** Fast, cost-efficient backend powered by AWS Lambda & API Gateway using AWS SAM.
 
-1. Navega al directorio frontend:
-   ```bash
-   cd frontend
-   ```
-2. Instala dependencias:
-   ```bash
-   npm install
-   ```
-3. Crea un archivo `.env` en la raíz de `frontend/` y añade la URL del API Gateway generada por AWS SAM:
-   ```env
-   VITE_API_URL=https://XYZ.execute-api.us-east-1.amazonaws.com/Prod
-   ```
-4. Inicia el servidor de desarrollo en la red local para acceder desde tu móvil (requiere HTTPS configurado o usar Localhost Port Forwarding):
-   ```bash
-   npm run dev -- --host
-   ```
+---
 
-*Nota: Para que el navegador móvil permita el acceso a la cámara (`getUserMedia`), la web debe servirse mediante HTTPS o estar en `localhost`.*
+## Architecture Overview
 
-## Etiquetas (Tags)
-Todos los recursos desplegados en AWS tienen la etiqueta `project: cardizard` para fácil rastreo de costes.
+`mermaid
+flowchart LR
+    A[Mobile Web Client\nReact + Vite + Tailwind] -->|Upload Card Image| B[Amazon API Gateway]
+    B --> C[AWS Lambda OCR Handler]
+    C -->|Extract Text/IDs| D[AWS Textract]
+    C -->|Fetch Card Data & Prices| E[Pokemon TCG API]
+    C -->|Return Card Details| A
+`
+
+---
+
+## Project Structure
+
+`	ext
+cardizard/
+├── frontend/           # React + Vite + Tailwind CSS mobile-first web app
+│   ├── src/            # Components, camera viewfinder, and card details UI
+│   └── package.json
+└── backend/            # AWS Serverless Application Model (SAM)
+    ├── template.yaml   # AWS SAM Infrastructure definition
+    └── handlers/       # Lambda functions for OCR processing & API integration
+`
+
+---
+
+## Local Development & Deployment
+
+### 1. Frontend Setup
+`ash
+cd frontend
+npm install
+npm run dev
+`
+
+### 2. Backend Deployment (AWS SAM)
+`ash
+cd backend
+npm install
+sam build
+sam deploy --guided
+`
+
+---
+
+## Author
+
+- **Daniel Ibáñez** - [@danielibabet](https://github.com/danielibabet)
