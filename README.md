@@ -9,6 +9,12 @@
 </p>
 
 <p align="center">
+  <a href="https://buymeacoffee.com/dibanezb">
+    <img src="https://cdn.buymeacoffee.com/buttons/v2/default-yellow.png" alt="Buy Me A Coffee" height="42" width="150" />
+  </a>
+</p>
+
+<p align="center">
   </a>
 </p>
 
