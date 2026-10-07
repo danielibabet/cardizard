@@ -8,11 +8,17 @@
   <img src="https://img.shields.io/badge/AWS_Textract-232F3E?style=for-the-badge&logo=amazon-aws&logoColor=white" alt="AWS Textract"/>
 </p>
 
+<p align="center">
+  <a href="https://buymeacoffee.com/dibanezb">
+    <img src="https://cdn.buymeacoffee.com/buttons/v2/default-yellow.png" alt="Buy Me A Coffee" height="42" width="150" />
+  </a>
+</p>
+
 Cardizard is a **Mobile-First progressive web application** designed to scan physical Pokémon TCG cards directly from your smartphone camera, extract card text/IDs with **AWS Textract**, and fetch real-time rarity, card variants, and market prices via the official **Pokémon TCG API**.
 
 ---
 
-## Key Features
+## ⚡ Key Features
 
 - 📸 **Mobile Camera Scanner:** Instant photo capture and cropping optimized for handheld devices.
 - 🔍 **AI OCR Extraction:** High-precision text detection powered by AWS Textract to identify Pokémon names, set numbers, and series codes.
@@ -21,20 +27,20 @@ Cardizard is a **Mobile-First progressive web application** designed to scan phy
 
 ---
 
-## Architecture Overview
+## 🏛️ Architecture Overview
 
 `mermaid
 flowchart LR
-    A[Mobile Web Client\nReact + Vite + Tailwind] -->|Upload Card Image| B[Amazon API Gateway]
-    B --> C[AWS Lambda OCR Handler]
-    C -->|Extract Text/IDs| D[AWS Textract]
-    C -->|Fetch Card Data & Prices| E[Pokemon TCG API]
+    A["📱 Mobile Web Client\n(React + Vite + Tailwind)"] -->|Upload Card Image| B["☁️ Amazon API Gateway"]
+    B --> C["⚡ AWS Lambda Handler"]
+    C -->|Extract Text & IDs| D["🔍 AWS Textract"]
+    C -->|Fetch Card Data & Prices| E["🃏 Pokemon TCG API"]
     C -->|Return Card Details| A
 `
 
 ---
 
-## Project Structure
+## 📁 Project Structure
 
 `	ext
 cardizard/
@@ -48,9 +54,10 @@ cardizard/
 
 ---
 
-## Local Development & Deployment
+## 🚀 Local Development & Deployment
 
 ### 1. Frontend Setup
+
 `ash
 cd frontend
 npm install
@@ -58,6 +65,7 @@ npm run dev
 `
 
 ### 2. Backend Deployment (AWS SAM)
+
 `ash
 cd backend
 npm install
@@ -67,6 +75,7 @@ sam deploy --guided
 
 ---
 
-## Author
+## ☕ Support & Author
 
 - **Daniel Ibáñez** - [@danielibabet](https://github.com/danielibabet)
+- If you find this project helpful, consider supporting: [![Buy Me A Coffee](https://img.shields.io/badge/Buy%20Me%20A%20Coffee-Donate-yellow.svg?style=flat&logo=buy-me-a-coffee)](https://buymeacoffee.com/dibanezb)
